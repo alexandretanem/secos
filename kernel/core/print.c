@@ -49,8 +49,8 @@ size_t __vprintf(const char *format, va_list params)
 {
    size_t retval;
 
-   retval = __vsnprintf(vprint_buffer,sizeof(vprint_buffer),format,params);
-   uart_write((uint8_t*)vprint_buffer, retval-1);
+   retval = __vsnprintf(vprint_buffer, sizeof(vprint_buffer), format, params);
+   uart_write((uint8_t*) vprint_buffer, retval-1);
    return retval;
 }
 
@@ -162,15 +162,20 @@ static inline void __format_add_hex(buffer_t *buf, size_t len,
 size_t __vsnprintf(char *buffer, size_t len,
                    const char *format, va_list params)
 {
-   buffer_t buf;
-   size_t   size;
-   char     c;
-   bool_t   interp, lng;
+   buffer_t 	buf;
+   size_t   	size;
+   char     	c;
+   bool_t	interp, lng;
+
+   uint16_t	padd ;
+   char 	padd_char ;
 
    buf.data.str = buffer;
    buf.sz = 0;
    interp = false;
    lng = false;
+   padd = 0 ;
+   padd_char = ' ';
    size = 4;
 
    if(len) len--;
@@ -192,6 +197,20 @@ size_t __vsnprintf(char *buffer, size_t len,
             size /= 2;
             continue;
          }
+
+	 // No padding with length modifiers
+	 if(c >= '0' && c <= '9' && size != 4){ // The case %ll10{format} becomes %ll{format}
+		 continue ;
+		 //panic("unsupported format arg '%c'\n", c);
+	 }else if (c == '0' && padd == 0){
+		 padd_char = c ;
+		 continue ;
+	 }else if (c >= '0' && c <= '9') {
+		 padd = padd * 10 + (c - '0') ;
+		 continue ;
+	 }
+
+	size_t ante_sz = buf.sz ;
 
          // conversion modifiers
          if(c == 's'){
@@ -253,11 +272,7 @@ size_t __vsnprintf(char *buffer, size_t len,
             __format_add_str(&buf, len, "0x");
             __format_add_hex(&buf, len, value, 0);
 
-            // ignore padding, precision ...
-         } else if (c >= '0' && c <= '9') {
-            continue;
-
-            // escaped '%'
+	// escaped '%'
          } else if (c == '%') {
             __buf_add(&buf, len, c);
 
@@ -266,8 +281,22 @@ size_t __vsnprintf(char *buffer, size_t len,
             panic("unsupported format arg '%c'\n", c);
          }
 
+	 if (ante_sz < buf.sz){ // Means something has been append to buf => Add right padding
+		 size_t diff = buf.sz - ante_sz ;
+		 while(buf.sz - ante_sz < padd && buf.sz < len){
+			 for(size_t i = 0 ; i < diff ; i++){
+				 buf.data.str[buf.sz - i] = buf.data.str[buf.sz - i - 1] ;
+			 }
+			 buf.data.str[buf.sz - diff] = padd_char ;
+			 buf.sz++ ;
+		 }
+	 }
+
          interp = false;
          lng = false;
+	 padd = 0 ;
+	 padd_char = ' ';
+
       }
       else if(c == '%')
       {
