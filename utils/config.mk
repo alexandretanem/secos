@@ -16,7 +16,7 @@ CFLG_FP    := -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-ssse3 -mno-sse4.1 \
               -mno-fma4 -mno-xop -mno-lwp -mno-3dnow -mno-popcnt \
               -mno-abm -mno-bmi -mno-bmi2 -mno-lzcnt -mno-tbm
 
-CFLG_32    := -m32 -g -fno-pic
+CFLG_32    := -m32 -g -fno-pic -fno-stack-protector
 CFLG_WRN   := -Wall -W -Werror
 CFLG_KRN   := -pipe -nostdlib -nostdinc -ffreestanding -fms-extensions
 CFLG_REL   := -DRELEASE=\"secos-$(RELEASE)\"
@@ -49,7 +49,7 @@ TARGET     := kernel.elf
 
 # Qemu options
 QEMU := $(shell which qemu-system-i386)
-#QEMU := $(shell which kvm)
+#QEMU := $(shell which qemu-system-i386) -enable-kvm
 QFDA := -drive media=disk,format=raw,if=floppy,file=../utils/grub.floppy
 QHDD := -drive media=disk,format=raw,if=ide,index=0,file=fat:rw:.
 QSRL := -serial mon:stdio

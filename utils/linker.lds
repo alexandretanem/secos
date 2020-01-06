@@ -27,4 +27,14 @@ SECTIONS
    /DISCARD/ : { *(.note* .indent .comment)      } : phsetup
 
    __kernel_end__ = .;
+
+
+	
+   . = 0x400000;
+   __user_start__ = .;
+
+   .user     : { *(.user)                        } : phsetup
+
+   __user_end__ = .;
+
 }
